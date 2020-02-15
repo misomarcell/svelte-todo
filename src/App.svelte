@@ -1,40 +1,41 @@
 <script>
 	import Profile from './Profile.svelte';
 	
-	import { auth, googleProvider } from './firebase'
+	import { startWith } from 'rxjs/operators';
+	import { authState } from 'rxfire/auth';
+	import { collectionData } from 'rxfire/firestore';
+	import { auth, googleProvider } from './firebase';
+	import { db } from './firebase';
 
-	var user;
-	if(auth.currentUser)
-	{
-		console.log(auth.currentUser);
-		user = auth.currentUser;
-	}
-	function signOut(){
-		auth.signOut().then(result => {
-			return result;
-		});
-		user = null;
+	let user = authState(auth);
+	function login(){
+		auth.signInWithPopup(googleProvider);
 	}
 
-	function signIn(){
-		auth.signInWithPopup(googleProvider).then(result => {
-			user = auth.currentUser;
-		});
+	function add() {
+		 db.collection('todos').add({ text: 'c text', state: 'c inc', uid: user.uid || 'anonymus', created: Date.now() });
 	}
+
+	const query = db.collection('todos');
+	const todos = collectionData(query, 'id').pipe(startWith([]));;
 </script>
 
 <main>
-	<h1>Hello aaa</h1>
-	<p>Visit the <a href="https://svelte.dev/tutorial">Svelte tutorial</a> to learn how to build Svelte apps.</p>
+	{#if $user}
+		<Profile {...$user}/>
+		<button on:click={() => auth.signOut()}>Sign Out</button>
+	{:else}
+		<button on:click={login}>Sign In</button>
+	{/if}
+
+	<button on:click={add}>Add item</button>
+
+	{#each $todos as todo, i}
+
+        <p> {i} {todo.text} </p>
+        
+	{/each}
 </main>
-
-
-{#if user}
-	<Profile {...user}/>
-	<button on:click={signOut}>Sign Out</button>
-{:else}
-	<button on:click={signIn}>Sign In</button>
-{/if}
 
 <style>
 	main {
