@@ -1,40 +1,29 @@
 <script>
 	import Profile from './Profile.svelte';
-	
-	import { startWith } from 'rxjs/operators';
+	import TodoList from './TodoList.svelte';
+
 	import { authState } from 'rxfire/auth';
-	import { collectionData } from 'rxfire/firestore';
 	import { auth, googleProvider } from './firebase';
-	import { db } from './firebase';
 
 	let user = authState(auth);
 	function login(){
 		auth.signInWithPopup(googleProvider);
 	}
 
-	function add() {
-		 db.collection('todos').add({ text: 'c text', state: 'c inc', uid: user.uid || 'anonymus', created: Date.now() });
-	}
-
-	const query = db.collection('todos');
-	const todos = collectionData(query, 'id').pipe(startWith([]));;
 </script>
 
 <main>
 	{#if $user}
 		<Profile {...$user}/>
 		<button on:click={() => auth.signOut()}>Sign Out</button>
+
+		<TodoList uid={ $user.uid } />
+
 	{:else}
 		<button on:click={login}>Sign In</button>
+		<TodoList uid={ null } />
 	{/if}
 
-	<button on:click={add}>Add item</button>
-
-	{#each $todos as todo, i}
-
-        <p> {i} {todo.text} </p>
-        
-	{/each}
 </main>
 
 <style>
